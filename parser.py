@@ -1,17 +1,8 @@
 from atexit import register
-from cProfile import label
-import opcode
-from operator import truediv
-from xdsl.dialects.builtin import ModuleOp
-
-from choco.lexer import Token, TokenKind, Lexer
-import choco.dialects.choco_ast as ast
-
+from lexer import Token, TokenKind, Lexer
 from typing import List, Optional, Union, Tuple, Dict
-
-from choco.errmsg import *
-
-from choco.instr import *
+from errmsg import *
+from instr import *
 
 class Parser:
 

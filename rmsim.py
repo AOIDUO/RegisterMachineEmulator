@@ -6,13 +6,13 @@ import sys
 from io import StringIO
 import argparse
 
-from choco.lexer import Lexer as ChocoLexer
-from choco.parser import Parser as ChocoParser
+from lexer import Lexer as Lexer
+from parser import Parser as Parser
 
 from typing import Callable, List
 
 
-class ChocoOptMain:
+class RegMachineMain:
     args: argparse.Namespace
 
     def __init__(self, args: argparse.Namespace):
@@ -25,8 +25,8 @@ class ChocoOptMain:
         else:
             f = open(self.args.input_file, mode='r')
 
-        lexer = ChocoLexer(f)
-        parser = ChocoParser(lexer)
+        lexer = Lexer(f)
+        parser = Parser(lexer)
         program = parser.parse_input()
         return program
 
@@ -40,8 +40,8 @@ arg_parser.add_argument("input_file",
 
 
 def __main__(args: argparse.Namespace):
-    choco_main = ChocoOptMain(args)
-    print(choco_main.parse())
+    regm_main = RegMachineMain(args)
+    print(regm_main.parse())
 
 
 if __name__ == "__main__":
