@@ -399,4 +399,5 @@ class Parser:
             target_branch = self.match(TokenKind.IDENTIFIER).value
             return Instr(Opcode.DECJZ, [reg, target_branch])
         else:
+            print(self.lexer.peek())
             raise Exception("unmatch")
