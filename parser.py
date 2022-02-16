@@ -1,4 +1,3 @@
-from atexit import register
 from lexer import Token, TokenKind, Lexer
 from typing import List, Optional, Union, Tuple, Dict
 from errmsg import *

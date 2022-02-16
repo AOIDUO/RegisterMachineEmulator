@@ -30,6 +30,8 @@ class RegMachineMain:
         program = parser.parse_input()
         return program
 
+    def emulate(self):
+        pass
 
 arg_parser = argparse.ArgumentParser(
     description='1')
