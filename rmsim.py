@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
-import os
 import sys
-from io import StringIO
-import argparse
 
-from lexer import Lexer as Lexer
-from parser import Parser as Parser
-
+from frontend import Lexer, Parser
+from emulator import Emulator
 from typing import Callable, List
 
 
@@ -27,11 +23,11 @@ class RegMachineMain:
 
         lexer = Lexer(f)
         parser = Parser(lexer)
-        program = parser.parse_input()
-        return program
+        self.program = parser.parse_input()
 
     def emulate(self):
-        pass
+        e = Emulator(*self.program)
+        e.run()
 
 arg_parser = argparse.ArgumentParser(
     description='1')
@@ -43,7 +39,9 @@ arg_parser.add_argument("input_file",
 
 def __main__(args: argparse.Namespace):
     regm_main = RegMachineMain(args)
-    print(regm_main.parse())
+    regm_main.parse()
+    regm_main.emulate()
+    print()
 
 
 if __name__ == "__main__":

@@ -1,11 +1,13 @@
+
+from errmsg import *
+from instr import *
 from io import TextIOBase
 from enum import Enum, auto
 from dataclasses import dataclass
-
 import io
+from typing import Any, List, Union, Optional, Tuple, Dict
 
-from typing import Any, List, Union, Optional, Tuple
-
+NOT_FOUND="token of kind {expected} not found."
 
 class TokenKind(Enum):
     def __hash__(self):
@@ -14,7 +16,7 @@ class TokenKind(Enum):
     # RM new keywords
     REGISTERS_SYMBOL = auto()
     HALT = auto()
-    DECJZ = auto() #decjz
+    DECJZ = auto() 
     INC = auto()
 
     EOF = auto()
@@ -80,13 +82,10 @@ class Scanner:
 
         self.file_content_by_line = stream.readlines()
         self.stream = io.StringIO(''.join(self.file_content_by_line))
-        # self.stream: TextIOBase = stream
-        # self.file_content_by_line = open(stream.name).readlines()
         self.buffer: Optional[StrLnCol] = None  # A buffer of one character.
 
     def peek(self) -> StrLnCol:
         """ Return the next character from input without consuming it.
-
         :return: The next character in the input stream or None at the end of the stream.
         """
         # A buffer of one character is used to store the last scanned character.
@@ -97,7 +96,6 @@ class Scanner:
 
     def consume(self) -> StrLnCol:
         """ Consume and return the next character from input.
-
         :return: The next character in the input stream or None at the end of the stream.
         """
         # If the buffer is full, we empty the buffer and return the character it contains.
@@ -110,38 +108,27 @@ class Scanner:
         line_ret = self.line
         col_ret = self.col
         
-        # TODO: RM ME
-        # print(c + " " + str(self.line)+":"+str(self.col))
-        
-        # READ FILE TWICE, DETELE THIS
-        # self.file_content[self.line].append(c)
-        
         # update value 
         if (c == '\n'): 
             self.line += 1
-            # READ FILE TWICE, DETELE THIS
-            #self.file_content.append([])
             self.col = 0
         else: 
             self.col += 1
 
         return StrLnCol(c, line_ret, col_ret)
 
-
 class Tokenizer:
 
     def __init__(self, scanner: Scanner):
         self.scanner = scanner
-        self.buffer: List[Token] = []  # A buffer of tokens
+        self.buffer: List[Token] = []  
         self.is_new_line = True
         self.is_logical_line = False
-        self.line_indent_lvl = 0  # How "far" we are inside the line, i.e. what column.
-        # Resets after every end-of-line sequence.
+        self.line_indent_lvl = 0  
         self.indent_stack = [0]
 
     def peek(self, k: int = 1) -> Union[Token, List[Token]]:
         """ Peeks through the next `k` number of tokens.
-
         This functions looks ahead the next `k` number of tokens,
         and returns them as a list.
         It uses a FIFO buffer to store tokens temporarily.
@@ -218,15 +205,6 @@ class Tokenizer:
                 self.scanner.consume()
                 return Token(TokenKind.COLON, None, c.line, c.col, 1)
 
-            # elif c == 'r':
-                # self.scanner.consume()
-                # c += self.scanner.peek()
-                # if c.isnumeric():
-                    # address = self.scanner.consume()
-                    # return Token(TokenKind.REGISTER , address , c.line, c.col, None)
-                # else:
-                    # raise Exception('Unknown lexeme: {}'.format(c))
-
             # Identifier: [a-zA-Z_][a-zA-Z0-9_]*
             elif c.isalpha() or c == '_':
                 token_start_line, token_start_col = c.line, c.col
@@ -268,7 +246,6 @@ class Tokenizer:
             else:
                 raise Exception("Invalid character detected: '" + c + "'")
 
-
 class Lexer:
 
     # line : int = 0
@@ -286,3 +263,140 @@ class Lexer:
         # self.col = self.tokenizer.scanner.col
         ret = self.tokenizer.consume()
         return ret
+
+class Parser:
+
+    def __init__(self, lexer: Lexer):
+        self.lexer = lexer
+
+    def check(self, expected: Union[List[TokenKind], TokenKind]) -> bool:
+        if isinstance(expected, list):
+            tokens = self.lexer.peek(len(expected))
+            assert isinstance(tokens, list), "List of tokens expected"
+            return all(
+                [tok.kind == type_ for tok, type_ in zip(tokens, expected)])
+
+        token = self.lexer.peek()
+        assert isinstance(token, Token), "Single token expected"
+        return token.kind == expected
+
+    def match(self, expected: TokenKind, call_from=None) -> Token:
+
+        if self.check(expected):
+            token = self.lexer.peek()
+            assert isinstance(token, Token), "A single token expected"
+            self.lexer.consume()
+            return token
+
+        token = self.lexer.peek()
+        assert isinstance(token, Token), "A single token expected"
+        
+        self.report_error(token, NOT_FOUND.format(expected=expected))
+
+    def report_error(self, token : Token, msg : str):
+        self.print_syntax_err(token)
+        print(msg)
+        self.print_err_line(token)
+        exit(0)
+
+    def print_syntax_err(self, token : Token):
+        print(f"SyntaxError (line {token.line+1}, column {token.col+1}): ",end='')
+
+    def print_err_line(self, token : Token ):
+        
+        for char in self.lexer.tokenizer.scanner.file_content_by_line[token.line]:
+            print(char, end='')
+
+        if self.lexer.tokenizer.scanner.file_content_by_line[token.line][-1] != '\n':
+            print()
+
+        print('-' * token.col + "^")
+
+
+    def parse_input(self) -> Tuple[List[int] , Dict[str, int], List[Instr]]:
+        """
+            input := regSpec Newline program
+        """
+        regs : List[int] = self.parse_reg_spec()
+        
+        self.match(TokenKind.NEWLINE)
+
+        labels : Dict[str, int] = None
+        instrs : List[Instr] = None
+        (labels, instrs) = self.parse_program()
+
+        self.match(TokenKind.EOF)
+
+        return ((regs, labels, instrs))
+
+    def parse_reg_spec(self):
+        """
+            `registers` (number)*
+        """
+        self.match(TokenKind.REGISTERS_SYMBOL)
+        regs = []
+        while self.check(TokenKind.INTEGER):
+            regs.append(self.match(TokenKind.INTEGER).value)
+        return regs
+
+    def parse_program(self):
+        """
+            program := (labInst NEWLINE)*
+            labInst := (label `:`)? inst
+            instr := `inc` register
+                   | `decjz` register label
+            register := `r` number
+        """
+        instructions = []
+        labels = {}
+        while self.is_labInst_first_set():
+            instr = self.parse_labInst()
+            instructions.append(instr)
+
+            # if label is already defined, raise exception
+            label = instr.label
+            if label == None:
+                pass
+            elif label in labels:
+                raise Exception("label define again")
+            else:
+                labels[label] = len(instructions) - 1
+            
+            self.match(TokenKind.NEWLINE)
+
+        return (labels, instructions)
+    
+    def is_labInst_first_set(self):
+        if self.check(TokenKind.DECJZ) or self.check(TokenKind.INC) or self.check(TokenKind.IDENTIFIER):
+            return True
+        else: return False
+
+    def parse_labInst(self) -> Instr:
+        """
+          labInst := (label `:`)? inst
+            instr := `inc` register
+                   | `decjz` register label
+         register := `r` number
+        """
+        if self.check(TokenKind.IDENTIFIER): 
+            label = self.match(TokenKind.IDENTIFIER).value
+            self.match(TokenKind.COLON)
+        else:
+            label = None
+        instr = self.parse_instr()
+        instr.label = label
+        return instr
+
+
+    def parse_instr(self) -> Instr:
+        if self.check(TokenKind.INC):
+            self.match(TokenKind.INC)
+            reg = self.match(TokenKind.REGISTER).value
+            return Instr(Opcode.INC, [reg])
+        elif self.check(TokenKind.DECJZ):
+            self.match(TokenKind.DECJZ)
+            reg = self.match(TokenKind.REGISTER).value
+            target_branch = self.match(TokenKind.IDENTIFIER).value
+            return Instr(Opcode.DECJZ, [reg, target_branch])
+        else:
+            raise Exception("unmatch")

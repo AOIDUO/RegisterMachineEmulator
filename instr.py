@@ -17,7 +17,7 @@ class Param:
 
 
 class Instr:
-	def __init__(self, opcode : Opcode, params : List[Param], label=None):
+	def __init__(self, opcode : Opcode, params : List[Param], label:str=None):
 		self.opcode = opcode
 		self.params = params
 		self.label = label
@@ -25,7 +25,7 @@ class Instr:
 	def __repr__(self) -> str: 
 		ret = ""
 		if self.label != None:
-			ret += "{label}: ".format(label=self.label.value) 
+			ret += "{label}: ".format(label=self.label) 
 		
 		ret += "{opcode} {params}".format(opcode=self.opcode.name, params=self.params)
 
