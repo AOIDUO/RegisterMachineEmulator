@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+
+import argparse
+from choco.lexer import Lexer, TokenKind
+
+parser = argparse.ArgumentParser(description='A RM lexer')
+parser.add_argument('file', type=argparse.FileType('r'))
+args = parser.parse_args()
+
+lexer = Lexer(args.file)
+token = lexer.consume()
+while token.kind != TokenKind.EOF:
+    print(token)
+    token = lexer.consume()
+print(token)

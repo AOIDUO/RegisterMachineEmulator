@@ -41,6 +41,8 @@ class Token:
     def __repr__(self) -> str:
         return self.kind.name + (
             (":" + str(self.value)) if self.value is not None else "")
+    def __hash__(self):
+        return hash(self.__repr__())
 
 class StrLnCol(str):
     line : int
@@ -236,14 +238,14 @@ class Tokenizer:
                 
                 if name == 'registers':
                     return Token(TokenKind.REGISTERS_SYMBOL, None, token_start_line, token_start_col, 9)
-                if name == 'HALT':
-                    return Token(TokenKind.HALT, None, token_start_line, token_start_col, 4)
+                # if name == 'HALT':
+                    # return Token(TokenKind.HALT, None, token_start_line, token_start_col, 4)
                 if name == 'decjz':
                     return Token(TokenKind.DECJZ, None, token_start_line, token_start_col, 9)
                 if name == 'inc':
                     return Token(TokenKind.INC, None, token_start_line, token_start_col, 4)
                 if name[0] == 'r' and name[1::].isnumeric():
-                    return Token(TokenKind.REGISTER , name[1::] , c.line, c.col, None)
+                    return Token(TokenKind.REGISTER , int(name[1::]) , c.line, c.col, None)
 
                 return Token(TokenKind.IDENTIFIER, name, token_start_line, token_start_col, len(name))
             

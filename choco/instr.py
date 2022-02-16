@@ -21,4 +21,15 @@ class Instr:
 		self.opcode = opcode
 		self.params = params
 		self.label = label
-	pass
+
+	def __repr__(self) -> str: 
+		ret = ""
+		if self.label != None:
+			ret += "{label}: ".format(label=self.label.value) 
+		
+		ret += "{opcode} {params}".format(opcode=self.opcode.name, params=self.params)
+
+		return ret 
+		return "{label}: {opcode} {params}".format(label=self.label.value, opcode=self.opcode.name, params=self.params) 
+		
+		return "{opcode} ".format(opcode=self.opcode.name) 

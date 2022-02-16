@@ -1,3 +1,6 @@
+from atexit import register
+from cProfile import label
+import opcode
 from operator import truediv
 from xdsl.dialects.builtin import ModuleOp
 
@@ -113,14 +116,18 @@ class Parser:
         instructions = []
         labels = {}
         while self.is_labInst_first_set():
-            label, instr = self.parse_labInst()
+            instr = self.parse_labInst()
             instructions.append(instr)
 
             # if label is already defined, raise exception
-            if label in labels:
-                raise("label define again")
+            label = instr.label
+            if label == None:
+                pass
+            elif label in labels:
+                raise Exception("label define again")
             else:
                 labels[label] = len(instructions) - 1
+            
             self.match(TokenKind.NEWLINE)
 
         return (labels, instructions)
@@ -130,5 +137,32 @@ class Parser:
             return True
         else: return False
 
-    def parse_labInst(self) -> Tuple[str, Instr]:
-        pass
+    def parse_labInst(self) -> Instr:
+        """
+          labInst := (label `:`)? inst
+            instr := `inc` register
+                   | `decjz` register label
+         register := `r` number
+        """
+        if self.check(TokenKind.IDENTIFIER): 
+            label = self.match(TokenKind.IDENTIFIER) 
+            self.match(TokenKind.COLON)
+        else:
+            label = None
+        instr = self.parse_instr()
+        instr.label = label
+        return instr
+
+
+    def parse_instr(self) -> Instr:
+        if self.check(TokenKind.INC):
+            self.match(TokenKind.INC)
+            reg = self.match(TokenKind.REGISTER).value
+            return Instr(Opcode.INC, [reg])
+        elif self.check(TokenKind.DECJZ):
+            self.match(TokenKind.DECJZ)
+            reg = self.match(TokenKind.REGISTER).value
+            target_branch = self.match(TokenKind.IDENTIFIER).value
+            return Instr(Opcode.DECJZ, [reg, target_branch])
+        else:
+            raise Exception("unmatch")
