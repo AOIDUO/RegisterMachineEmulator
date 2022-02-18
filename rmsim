@@ -35,13 +35,18 @@ arg_parser.add_argument("input_file",
                         type=str,
                         nargs="?",
                         help="Path to input file")
-
+arg_parser.add_argument("-t",
+                        "--trace",
+                        action='store_true'
+                        )
 
 def __main__(args: argparse.Namespace):
     regm_main = RegMachineMain(args)
     regm_main.parse()
     regm_main.emulate()
-    print()
+
+    if args.trace:
+        pass
 
 
 if __name__ == "__main__":
