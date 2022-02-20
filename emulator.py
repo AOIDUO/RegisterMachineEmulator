@@ -17,39 +17,47 @@ class Emulator:
 		if not addr in self.regs:
 			self.regs[addr] = 0
 
-	def run(self):
+	def run(self, trace=False):
 		# print (self.regs)
 		# print(self.instrs)
 		# print(self.labels)
 		
+		if trace == True:
+			print (f"pc 0 ", end='')
+			self.print_regs()
+
 		pc = 0
 		while pc < len(self.instrs):
 		
 			instr = self.instrs[pc]
 		
 			if instr.opcode == Opcode.INC:
-				addr = instr.params[0]
-				self.init_reg(addr)
-				self.regs[addr] += 1
+				data_addr = instr.params[0]
+				self.init_reg(data_addr)
+				self.regs[data_addr] += 1
 				pc += 1
 
 			elif instr.opcode == Opcode.DECJZ:
 				# if R[i] = 0 then goto j , else subtract 1 from R i
 				
-				addr = instr.params[0]
-				self.init_reg(addr)
+				data_addr = instr.params[0]
+				self.init_reg(data_addr)
 				target_branch = instr.params[1]
 
-				if self.regs[addr] == 0: # jump to target_branch
+				if self.regs[data_addr] == 0: # jump to target_branch
 					pc = self.labels[target_branch]
 				else: # subtract 1
-					self.regs[addr] -= 1
+					self.regs[data_addr] -= 1
 					pc += 1
 			else:
 				raise Exception("Unsupported opcode")
 
-		# print (self.regs)
-		self.print_regs()
+			if trace == True:
+				print (f"pc {pc} ", end='')
+				self.print_regs()
+
+		if trace != True:
+			self.print_regs()
 
 	def print_regs(self):
 		print ("registers ", end='')

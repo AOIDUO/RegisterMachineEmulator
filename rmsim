@@ -3,7 +3,7 @@
 import argparse
 import sys
 
-from frontend import Lexer, Parser
+from frontend import Lexer, Parser, TokenKind
 from emulator import Emulator
 from typing import Callable, List
 
@@ -27,7 +27,20 @@ class RegMachineMain:
 
     def emulate(self):
         e = Emulator(*self.program)
-        e.run()
+        e.run(trace=self.args.trace)
+
+    def lexerdebug(self):
+        """Parse the input file."""
+        if self.args.input_file is None:
+            f = sys.stdin
+        else:
+            f = open(self.args.input_file, mode='r')
+        lexer = Lexer(f)
+        token = lexer.consume()
+        while token.kind != TokenKind.EOF:
+            print(token)
+            token = lexer.consume()
+        print(token)
 
 arg_parser = argparse.ArgumentParser(
     description='1')
@@ -39,11 +52,17 @@ arg_parser.add_argument("-t",
                         "--trace",
                         action='store_true'
                         )
+arg_parser.add_argument("-m",
+                        "--macro",
+                        nargs='+', 
+                        default=[],
+                        help="macros")
 
 def __main__(args: argparse.Namespace):
     regm_main = RegMachineMain(args)
     regm_main.parse()
     regm_main.emulate()
+    # regm_main.lexerdebug()
 
     if args.trace:
         pass

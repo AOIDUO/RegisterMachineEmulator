@@ -210,7 +210,7 @@ class Tokenizer:
                 token_start_line, token_start_col = c.line, c.col
                 name = self.scanner.consume()
                 c = self.scanner.peek()
-                while c.isalnum() or c == '_':
+                while c.isalnum() or c == '_' or c == '-' or c == 'r':
                     name += self.scanner.consume()
                     c = self.scanner.peek()
                 
@@ -218,13 +218,14 @@ class Tokenizer:
                     return Token(TokenKind.REGISTERS_SYMBOL, None, token_start_line, token_start_col, 9)
                 # if name == 'HALT':
                     # return Token(TokenKind.HALT, None, token_start_line, token_start_col, 4)
-                if name == 'decjz':
+                elif name == 'decjz':
                     return Token(TokenKind.DECJZ, None, token_start_line, token_start_col, 9)
-                if name == 'inc':
+                elif name == 'inc':
                     return Token(TokenKind.INC, None, token_start_line, token_start_col, 4)
-                if name[0] == 'r' and name[1::].isnumeric():
+                elif name[0] == 'r' and name[1::].isnumeric():
                     return Token(TokenKind.REGISTER , int(name[1::]) , c.line, c.col, None)
-
+                elif name[0] == 'r' and ((name[1] == '-' and name[2::].isnumeric())):
+                    return Token(TokenKind.REGISTER , -1*int(name[2::]) , c.line, c.col, None)
                 return Token(TokenKind.IDENTIFIER, name, token_start_line, token_start_col, len(name))
             
             # Number: [0-9]+
@@ -376,9 +377,11 @@ class Parser:
           labInst := (label `:`)? inst
             instr := `inc` register
                    | `decjz` register label
+                   | macro params
          register := `r` number
+         macro := label
         """
-        if self.check(TokenKind.IDENTIFIER): 
+        if self.check([TokenKind.IDENTIFIER,TokenKind.COLON]): # instruction with label
             label = self.match(TokenKind.IDENTIFIER).value
             self.match(TokenKind.COLON)
         else:
@@ -398,6 +401,9 @@ class Parser:
             reg = self.match(TokenKind.REGISTER).value
             target_branch = self.match(TokenKind.IDENTIFIER).value
             return Instr(Opcode.DECJZ, [reg, target_branch])
+        elif self.check(TokenKind.IDENTIFIER):
+            x = self.match(TokenKind.IDENTIFIER).value
+            print(x)
         else:
             print(self.lexer.peek())
             raise Exception("unmatch")

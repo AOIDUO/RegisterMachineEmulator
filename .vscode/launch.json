@@ -1,0 +1,24 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		
+		{
+			"name": "choco-opt",
+			"type": "python",
+			"request": "launch",
+			"program": "${workspaceFolder}/rmsim",
+			"console": "integratedTerminal",
+			"env": {
+                "PYTHONPATH": "${workspaceFolder}",
+            },
+			"args": [
+				"regm/macro_test.r"
+				// "tests/parser/variable-defs-decls/ops_coverage/var_def_func_def_var_def.choc"
+                // "tests/parser/simple-statements/ops_coverage/single_stmt_pass.choc",
+            ]
+		}
+	]
+}
