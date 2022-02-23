@@ -49,23 +49,19 @@ def pre_process(f):
                 token = lexer.consume()
                 token = lexer.consume()
 
-            if token.kind == TokenKind.IDENTIFIER:
-                params = []
-                if token.value in alias_macro_map:
-                    alias = token.value
-                    token = lexer.consume()
-                    while token.kind != TokenKind.NEWLINE:
-                        params.append(token)
-                        token = lexer.consume()
-                else: 
-                    raise Exception("undefined macro")
-
+            if token.kind == TokenKind.IDENTIFIER and token.value in alias_macro_map:
+                alias = token.value
                 new_line = ''.join(alias_macro_map[alias][1])
-                for j in range(len(params)):
-                    if params[j].kind == TokenKind.REGISTER:
-                        new_line = new_line.replace(f"${j}", f"r{params[j].value}")
+                param_count = 0
+                token = lexer.consume()
+                while token.kind != TokenKind.NEWLINE:
+                    if token.kind == TokenKind.REGISTER:
+                        new_line = new_line.replace(f"${param_count}", f"r{token.value}")
                     else:
-                        new_line = new_line.replace(f"${j}", params[j].value)
+                        new_line = new_line.replace(f"${param_count}", token.value)
+                    param_count += 1
+                    token = lexer.consume()
+
 
                 lines[i] = new_line + '\n'
 
