@@ -1,2 +1,1 @@
-registers
-decjz r-1 j
+decjz r-1 $0

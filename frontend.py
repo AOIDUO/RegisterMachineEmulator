@@ -15,18 +15,25 @@ class TokenKind(Enum):
 
     # RM new keywords
     REGISTERS_SYMBOL = auto()
+    IMPORT = auto()
+    AS = auto()
+    
     HALT = auto()
+
     DECJZ = auto() 
     INC = auto()
-
+    
     EOF = auto()
     NEWLINE = auto()
+    
     COLON = auto()
 
     IDENTIFIER = auto()
     MINUS = auto()
     INTEGER = auto()
     REGISTER = auto()
+    PARAM = auto()
+    DIRECTORY = auto()
 
 @dataclass
 class Token:
@@ -206,18 +213,20 @@ class Tokenizer:
                 return Token(TokenKind.COLON, None, c.line, c.col, 1)
 
             # Identifier: [a-zA-Z_][a-zA-Z0-9_]*
-            elif c.isalpha() or c == '_':
+            elif c.isalpha() or c == '_' or c == '$':
                 token_start_line, token_start_col = c.line, c.col
                 name = self.scanner.consume()
                 c = self.scanner.peek()
-                while c.isalnum() or c == '_' or c == '-' or c == 'r':
+                while c.isalnum() or c == '_' or c == '-' or c == 'r' or c == '/' :
                     name += self.scanner.consume()
                     c = self.scanner.peek()
                 
                 if name == 'registers':
                     return Token(TokenKind.REGISTERS_SYMBOL, None, token_start_line, token_start_col, 9)
-                # if name == 'HALT':
-                    # return Token(TokenKind.HALT, None, token_start_line, token_start_col, 4)
+                if name == 'import':
+                    return Token(TokenKind.IMPORT, None, token_start_line, token_start_col, 6)
+                if name == 'as':
+                    return Token(TokenKind.AS, None, token_start_line, token_start_col, 2)
                 elif name == 'decjz':
                     return Token(TokenKind.DECJZ, None, token_start_line, token_start_col, 9)
                 elif name == 'inc':
@@ -226,6 +235,8 @@ class Tokenizer:
                     return Token(TokenKind.REGISTER , int(name[1::]) , c.line, c.col, None)
                 elif name[0] == 'r' and ((name[1] == '-' and name[2::].isnumeric())):
                     return Token(TokenKind.REGISTER , -1*int(name[2::]) , c.line, c.col, None)
+                elif name[0] == '$' and name[1::].isnumeric():
+                    return Token(TokenKind.PARAM , int(name[1::]) , c.line, c.col, None)
                 return Token(TokenKind.IDENTIFIER, name, token_start_line, token_start_col, len(name))
             
             # Number: [0-9]+
@@ -234,6 +245,18 @@ class Tokenizer:
                 while self.scanner.peek().isnumeric():
                     value += self.scanner.consume()
                 return Token(TokenKind.INTEGER, int(value), c.line, c.col, len(value))
+
+            # directory "./x/y"
+            elif c == '"':
+                self.scanner.consume()
+                value = ""
+                while True: #self.scanner.peek().isnumeric():
+                    if self.scanner.peek() == '"':
+                        self.scanner.consume()
+                        break
+                    value += self.scanner.consume()
+                return Token(TokenKind.DIRECTORY, value, c.line, c.col, len(value)+2)
+
 
             # End of file
             elif not c:
@@ -267,7 +290,8 @@ class Lexer:
 
 class Parser:
 
-    def __init__(self, lexer: Lexer):
+    def __init__(self, lexer: Lexer, is_macro=False):
+        self.is_macro = is_macro
         self.lexer = lexer
 
     def check(self, expected: Union[List[TokenKind], TokenKind]) -> bool:
@@ -322,6 +346,9 @@ class Parser:
         
         self.match(TokenKind.NEWLINE)
 
+        # macros = self.parse_import_macro()
+        # self.match(TokenKind.NEWLINE)
+
         labels : Dict[str, int] = None
         instrs : List[Instr] = None
         (labels, instrs) = self.parse_program()
@@ -339,6 +366,13 @@ class Parser:
         while self.check(TokenKind.INTEGER):
             regs.append(self.match(TokenKind.INTEGER).value)
         return regs
+
+    # def parse_import_macro(self):
+        # self.match(TokenKind.IMPORT)
+        # ret = []
+        # while self.check(TokenKind.IDENTIFIER):
+            # ret.append(self.match(TokenKind.IDENTIFIER))
+        # pass
 
     def parse_program(self):
         """
@@ -392,18 +426,40 @@ class Parser:
 
 
     def parse_instr(self) -> Instr:
-        if self.check(TokenKind.INC):
-            self.match(TokenKind.INC)
-            reg = self.match(TokenKind.REGISTER).value
-            return Instr(Opcode.INC, [reg])
-        elif self.check(TokenKind.DECJZ):
-            self.match(TokenKind.DECJZ)
-            reg = self.match(TokenKind.REGISTER).value
-            target_branch = self.match(TokenKind.IDENTIFIER).value
-            return Instr(Opcode.DECJZ, [reg, target_branch])
-        elif self.check(TokenKind.IDENTIFIER):
-            x = self.match(TokenKind.IDENTIFIER).value
-            print(x)
+
+        if self.is_macro:
+            if self.check(TokenKind.INC):
+                self.match(TokenKind.INC)
+                if self.lexer.peek().kind == TokenKind.REGISTER or self.lexer.peek().kind == TokenKind.PARAM:
+                    reg = self.match(self.lexer.peek().kind)
+                else: 
+                    raise Exception("macro expecting param or reg")
+                return Instr(Opcode.INC, [reg])
+            elif self.check(TokenKind.DECJZ):
+                self.match(TokenKind.DECJZ)
+                if self.lexer.peek().kind == TokenKind.REGISTER or self.lexer.peek().kind == TokenKind.PARAM:
+                    reg = self.match(self.lexer.peek().kind)
+                else: 
+                    raise Exception("macro expecting param or reg")
+                if self.lexer.peek().kind == TokenKind.IDENTIFIER or self.lexer.peek().kind == TokenKind.PARAM:
+                    target_branch = self.match(self.lexer.peek().kind)
+                else: 
+                    raise Exception("macro expecting param or reg")
+                return Instr(Opcode.DECJZ, [reg, target_branch])
+            else:
+                raise Exception("unmatch" + self.lexer.peek().value)
         else:
-            print(self.lexer.peek())
-            raise Exception("unmatch")
+            if self.check(TokenKind.INC):
+                self.match(TokenKind.INC)
+                reg = self.match(TokenKind.REGISTER)
+                return Instr(Opcode.INC, [reg])
+            elif self.check(TokenKind.DECJZ):
+                self.match(TokenKind.DECJZ)
+                reg = self.match(TokenKind.REGISTER)
+                target_branch = self.match(TokenKind.IDENTIFIER)
+                return Instr(Opcode.DECJZ, [reg, target_branch])
+        # elif self.check(TokenKind.IDENTIFIER):
+            # x = self.match(TokenKind.IDENTIFIER).value
+            # print(x)
+            else:
+                raise Exception("unmatch" + self.lexer.peek().value)

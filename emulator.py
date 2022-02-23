@@ -32,7 +32,7 @@ class Emulator:
 			instr = self.instrs[pc]
 		
 			if instr.opcode == Opcode.INC:
-				data_addr = instr.params[0]
+				data_addr = instr.params[0].value
 				self.init_reg(data_addr)
 				self.regs[data_addr] += 1
 				pc += 1
@@ -40,9 +40,9 @@ class Emulator:
 			elif instr.opcode == Opcode.DECJZ:
 				# if R[i] = 0 then goto j , else subtract 1 from R i
 				
-				data_addr = instr.params[0]
+				data_addr = instr.params[0].value
 				self.init_reg(data_addr)
-				target_branch = instr.params[1]
+				target_branch = instr.params[1].value
 
 				if self.regs[data_addr] == 0: # jump to target_branch
 					pc = self.labels[target_branch]
