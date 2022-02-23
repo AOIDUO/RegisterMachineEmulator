@@ -19,66 +19,61 @@ def pre_process(f):
     parser = Parser(Lexer(stream))
     
     if parser.check(TokenKind.IMPORT):
-        alias_dir_map = {}
-        # alias_content_map = {}
-        alias_parsed_content_map = {}
+        alias_macro_map = {}
         
+        # read all lines starting with "IMPORT"
+        # and also read macros
         while parser.check(TokenKind.IMPORT):
             parser.match(TokenKind.IMPORT)
             dir = parser.match(TokenKind.DIRECTORY).value
             parser.match(TokenKind.AS)
             alias = parser.match(TokenKind.IDENTIFIER).value
+            parser.match(TokenKind.NEWLINE)
+
             if not os.path.isabs(dir):
                 dir = os.path.join(os.getcwd(), dir)
-            alias_dir_map[alias] = dir
-            parser.match(TokenKind.NEWLINE)
+            x,_ = pre_process(open(dir,mode='r'))
+            alias_macro_map[alias] = (dir,x)
         
         # chop off import haeding
         line_of_registers_symbol = parser.lexer.peek().line
         lines = lines[line_of_registers_symbol:]
         
-        # read macros
-        for alias in alias_dir_map.keys():
-            dir = alias_dir_map[alias]
-            x,_ = pre_process(open(dir,mode='r'))
-            # parser = Parser(Lexer(stream), is_macro=True)
-            alias_dir_map[alias] = (dir,x)
-            # alias_parsed_content_map[alias] = parser.parse_program()
-
         # replacement
         for i in range(len(lines)):
-            line = lines[i]
-            lexer = Lexer(io.StringIO(line))
+            lexer = Lexer(io.StringIO(lines[i]))
             token = lexer.consume()
 
-            # GOTO loop1
             # main: GOTO loop1
-
             if lexer.peek().kind == TokenKind.COLON:
-                token = lexer.consume()
+                lexer.consume()
                 token = lexer.consume()
 
-            if token.kind == TokenKind.IDENTIFIER:
-                params = []
-                if token.value in alias_dir_map:
-                    alias = token.value
-                    token = lexer.consume()
-                    while token.kind != TokenKind.NEWLINE:
-                        params.append(token)
-                        token = lexer.consume()
-                else: 
-                    raise Exception("undefined macro")
 
-                new_line = ''.join(alias_dir_map[alias][1])
-                for j in range(len(params)):
-                    if params[j].kind == TokenKind.REGISTER:
-                        new_line = new_line.replace(f"${j}", f"r{params[j].value}")
+            # GOTO loop1
+            if token.kind == TokenKind.IDENTIFIER and token.value in alias_macro_map:
+                alias = token.value
+                param_count = 0
+                new_line = ''.join(alias_macro_map[alias][1])
+                token = lexer.consume()
+                while token.kind != TokenKind.NEWLINE:
+                    if token.kind == TokenKind.REGISTER:
+                        new_line = new_line.replace(f"${param_count}", f"r{token.value}")
                     else:
-                        new_line = new_line.replace(f"${j}", params[j].value)
+                        new_line = new_line.replace(f"${param_count}", token.value)
+                    # params.append(token)
+                    param_count += 1
+                    token = lexer.consume()
+
+                # new_line = ''.join(alias_macro_map[alias][1])
+                # for j in range(len(params)):
+                #     if params[j].kind == TokenKind.REGISTER:
+                #         new_line = new_line.replace(f"${j}", f"r{params[j].value}")
+                #     else:
+                #         new_line = new_line.replace(f"${j}", params[j].value)
 
                 lines[i] = new_line + '\n'
 
-        print(lines)
         return lines, io.StringIO(''.join(lines))
     else: 
         return lines, io.StringIO(''.join(lines))
