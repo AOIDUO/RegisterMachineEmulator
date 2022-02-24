@@ -430,48 +430,36 @@ class Parser:
 
     def parse_instr(self) -> Instr:
 
-        if self.is_macro:
-            if self.check(TokenKind.INC):
-                self.match(TokenKind.INC)
+        if self.check(TokenKind.INC):
+            self.match(TokenKind.INC)
+            if self.is_macro:
                 if self.lexer.peek().kind == TokenKind.REGISTER or self.lexer.peek().kind == TokenKind.PARAM:
                     reg = self.match(self.lexer.peek().kind)
-                else: 
-                    raise Exception("macro expecting param or reg")
-                return Instr(Opcode.INC, [reg])
-            elif self.check(TokenKind.DECJZ):
-                self.match(TokenKind.DECJZ)
+                else: raise Exception("macro expecting param or reg")
+            else: reg = self.match(TokenKind.REGISTER)
+            return Instr(Opcode.INC, [reg])
+
+        elif self.check(TokenKind.DECJZ):
+            self.match(TokenKind.DECJZ)
+
+            if self.is_macro:
                 if self.lexer.peek().kind == TokenKind.REGISTER or self.lexer.peek().kind == TokenKind.PARAM:
                     reg = self.match(self.lexer.peek().kind)
-                else: 
-                    raise Exception("macro expecting param or reg")
+                else: raise Exception("macro expecting param or reg")
                 if self.lexer.peek().kind == TokenKind.IDENTIFIER or self.lexer.peek().kind == TokenKind.PARAM:
                     target_branch = self.match(self.lexer.peek().kind)
-                else: 
-                    raise Exception("macro expecting param or reg")
-                return Instr(Opcode.DECJZ, [reg, target_branch])
-            elif self.check(TokenKind.NOP):
-                self.match(TokenKind.NOP)
-                return Instr(Opcode.NOP, [])
-            else:
-                raise Exception("unmatch" + self.lexer.peek().value)
-                
-        else:
-            if self.check(TokenKind.INC):
-                self.match(TokenKind.INC)
-                reg = self.match(TokenKind.REGISTER)
-                return Instr(Opcode.INC, [reg])
-
-            elif self.check(TokenKind.DECJZ):
-                self.match(TokenKind.DECJZ)
+                else: raise Exception("macro expecting param or reg")
+            else:                     
                 reg = self.match(TokenKind.REGISTER)
                 if self.check(TokenKind.IDENTIFIER) or self.check(TokenKind.INTEGER):
                     target_branch = self.match(self.lexer.peek().kind)
                 else: raise Exception("expect identifier or integer as branch target address")
-                return Instr(Opcode.DECJZ, [reg, target_branch])
 
-            elif self.check(TokenKind.NOP):
-                self.match(TokenKind.NOP)
-                return Instr(Opcode.NOP, [])
+            return Instr(Opcode.DECJZ, [reg, target_branch])
 
-            else:
-                raise Exception("unmatch" + self.lexer.peek().value)
+        elif self.check(TokenKind.NOP):
+            self.match(TokenKind.NOP)
+            return Instr(Opcode.NOP, [])
+
+        else:
+            raise Exception("unmatch" + self.lexer.peek().value)
