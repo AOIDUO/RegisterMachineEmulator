@@ -1,4 +1,4 @@
-import "regm/macro/clear.m" as CLR
+import "~" as CLR
 
 registers 114 514
 inc r0 # add 1

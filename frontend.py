@@ -454,11 +454,13 @@ class Parser:
                 return Instr(Opcode.NOP, [])
             else:
                 raise Exception("unmatch" + self.lexer.peek().value)
+                
         else:
             if self.check(TokenKind.INC):
                 self.match(TokenKind.INC)
                 reg = self.match(TokenKind.REGISTER)
                 return Instr(Opcode.INC, [reg])
+
             elif self.check(TokenKind.DECJZ):
                 self.match(TokenKind.DECJZ)
                 reg = self.match(TokenKind.REGISTER)
@@ -466,13 +468,10 @@ class Parser:
                     target_branch = self.match(self.lexer.peek().kind)
                 else: raise Exception("expect identifier or integer as branch target address")
                 return Instr(Opcode.DECJZ, [reg, target_branch])
+
             elif self.check(TokenKind.NOP):
                 self.match(TokenKind.NOP)
                 return Instr(Opcode.NOP, [])
 
-
-        # elif self.check(TokenKind.IDENTIFIER):
-            # x = self.match(TokenKind.IDENTIFIER).value
-            # print(x)
             else:
                 raise Exception("unmatch" + self.lexer.peek().value)
