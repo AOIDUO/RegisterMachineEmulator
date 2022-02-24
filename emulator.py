@@ -1,5 +1,6 @@
 from instr import *
 from typing import Any, List, Union, Optional, Tuple, Dict
+from frontend import StrLnCol
 
 class Emulator:
 	
@@ -45,7 +46,7 @@ class Emulator:
 				target_branch = instr.params[1].value
 
 				if self.regs[data_addr] == 0: # jump to target_branch
-					pc = self.labels[target_branch]
+					pc = self.labels[target_branch] if type(target_branch) is StrLnCol else target_branch
 				else: # subtract 1
 					self.regs[data_addr] -= 1
 					pc += 1
@@ -56,12 +57,11 @@ class Emulator:
 			else:
 				raise Exception("Unsupported opcode")
 
-			if trace == True:
+			if trace == True and pc < len(self.instrs):
 				print (f"pc {pc} ", end='')
 				self.print_regs()
 
-		if trace != True:
-			self.print_regs()
+		self.print_regs()
 
 	def print_regs(self):
 		print ("registers ", end='')

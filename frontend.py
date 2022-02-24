@@ -462,7 +462,9 @@ class Parser:
             elif self.check(TokenKind.DECJZ):
                 self.match(TokenKind.DECJZ)
                 reg = self.match(TokenKind.REGISTER)
-                target_branch = self.match(TokenKind.IDENTIFIER)
+                if self.check(TokenKind.IDENTIFIER) or self.check(TokenKind.INTEGER):
+                    target_branch = self.match(self.lexer.peek().kind)
+                else: raise Exception("expect identifier or integer as branch target address")
                 return Instr(Opcode.DECJZ, [reg, target_branch])
             elif self.check(TokenKind.NOP):
                 self.match(TokenKind.NOP)
