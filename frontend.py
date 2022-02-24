@@ -446,7 +446,7 @@ class Parser:
                 if self.lexer.peek().kind == TokenKind.REGISTER or self.lexer.peek().kind == TokenKind.PARAM:
                     reg = self.match(self.lexer.peek().kind)
                 else: raise Exception("macro expecting param or reg")
-                if self.lexer.peek().kind == TokenKind.IDENTIFIER or self.lexer.peek().kind == TokenKind.PARAM:
+                if self.lexer.peek().kind == TokenKind.IDENTIFIER or self.lexer.peek().kind == TokenKind.PARAM or self.lexer.peek().kind == TokenKind.INTEGER:
                     target_branch = self.match(self.lexer.peek().kind)
                 else: raise Exception("macro expecting param or reg")
             else:                     
@@ -462,4 +462,5 @@ class Parser:
             return Instr(Opcode.NOP, [])
 
         else:
+            print(self.lexer.peek(10))
             raise Exception("unmatch" + self.lexer.peek().value)

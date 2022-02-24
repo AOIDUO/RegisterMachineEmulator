@@ -1,8 +1,10 @@
 import io
 import os
-from frontend import Lexer, Parser, TokenKind
+from typing import List
 
-def pre_process(f):
+from frontend import Lexer, Parser, TokenKind, Token
+
+def pre_process(f, replace_label_with_addr=False):
     lines = f.readlines()
     stream = io.StringIO(''.join(lines))
     parser = Parser(Lexer(stream))
@@ -21,8 +23,8 @@ def pre_process(f):
 
             if not os.path.isabs(dir):
                 dir = os.path.join(os.getcwd(), dir)
-            x,_ = pre_process(open(dir,mode='r'))
-            alias_macro_map[alias] = (dir,x)
+            macro_content,_ = pre_process(open(dir,mode='r'), replace_label_with_addr=True)
+            alias_macro_map[alias] = (dir,macro_content)
         
         # chop off import haeding
         line_of_registers_symbol = parser.lexer.peek().line
@@ -85,7 +87,37 @@ def pre_process(f):
 
                 lines[i] = new_line + '\n'
 
-        return lines, io.StringIO(''.join(lines))
-    else: 
-        return lines, io.StringIO(''.join(lines))
+
+
+    if replace_label_with_addr :
+        parser = Parser(Lexer(io.StringIO(''.join(lines))), is_macro=True)
+        (labels, instrs) = parser.parse_program()
+
+        for i in range(len(lines)):
+            lexer = Lexer(io.StringIO(lines[i]))
+            token = lexer.consume()
+
+            if lexer.peek().kind == TokenKind.COLON:
+                colon_token = lexer.consume()
+                lines[i] = lines[i][colon_token.col+1:]
+                token = lexer.consume()
+
+            if token.kind == TokenKind.DECJZ:
+                token = lexer.peek(2)[1]
+                line_in_macro = token.line
+                if token.kind == TokenKind.IDENTIFIER:
+                    if token.value in labels:
+                        lines[i] = lines[i].replace(token.value, str(labels[token.value]))
+                    else:
+                        raise Exception("undefined label")
+                else:
+                    pass
+                    # print(token.kind)
+                    # if token.kind == TokenKind.INTEGER:
+                        # print(line_in_macro + i)
+                        # lines[i] = lines[i].replace(str(token.value), str(line_in_macro + i))
+        # print(labels)
+        print(lines)
+
+    return lines, io.StringIO(''.join(lines))
 

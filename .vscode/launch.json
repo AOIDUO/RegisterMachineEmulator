@@ -15,7 +15,7 @@
                 "PYTHONPATH": "${workspaceFolder}",
             },
 			"args": [
-				"regm/square.r"
+				"regm/jump_with_addr.r"
 				// "tests/parser/variable-defs-decls/ops_coverage/var_def_func_def_var_def.choc"
                 // "tests/parser/simple-statements/ops_coverage/single_stmt_pass.choc",
             ]

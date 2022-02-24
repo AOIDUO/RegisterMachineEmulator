@@ -20,9 +20,9 @@ class RegMachineMain:
         else:
             f = open(self.args.input_file, mode='r')
 
-        _,f = pre_process(f)
-        # pre-process: replace macro with actual instructions
+        x,f = pre_process(f)
 
+        print(x)
 
         lexer = Lexer(f)
         parser = Parser(lexer)
