@@ -17,12 +17,13 @@ class TokenKind(Enum):
     REGISTERS_SYMBOL = auto()
     IMPORT = auto()
     AS = auto()
-    
+
     HALT = auto()
 
     DECJZ = auto() 
     INC = auto()
-    
+    NOP = auto()
+
     EOF = auto()
     NEWLINE = auto()
     
@@ -221,6 +222,8 @@ class Tokenizer:
                     name += self.scanner.consume()
                     c = self.scanner.peek()
                 
+                if name == 'nop':
+                    return Token(TokenKind.NOP, None, token_start_line, token_start_col, 3)
                 if name == 'registers':
                     return Token(TokenKind.REGISTERS_SYMBOL, None, token_start_line, token_start_col, 9)
                 if name == 'import':
@@ -402,7 +405,7 @@ class Parser:
         return (labels, instructions)
     
     def is_labInst_first_set(self):
-        if self.check(TokenKind.DECJZ) or self.check(TokenKind.INC) or self.check(TokenKind.IDENTIFIER):
+        if self.check(TokenKind.DECJZ) or self.check(TokenKind.INC) or self.check(TokenKind.NOP) or self.check(TokenKind.IDENTIFIER):
             return True
         else: return False
 
@@ -446,6 +449,9 @@ class Parser:
                 else: 
                     raise Exception("macro expecting param or reg")
                 return Instr(Opcode.DECJZ, [reg, target_branch])
+            elif self.check(TokenKind.NOP):
+                self.match(TokenKind.NOP)
+                return Instr(Opcode.NOP, [])
             else:
                 raise Exception("unmatch" + self.lexer.peek().value)
         else:
@@ -458,6 +464,11 @@ class Parser:
                 reg = self.match(TokenKind.REGISTER)
                 target_branch = self.match(TokenKind.IDENTIFIER)
                 return Instr(Opcode.DECJZ, [reg, target_branch])
+            elif self.check(TokenKind.NOP):
+                self.match(TokenKind.NOP)
+                return Instr(Opcode.NOP, [])
+
+
         # elif self.check(TokenKind.IDENTIFIER):
             # x = self.match(TokenKind.IDENTIFIER).value
             # print(x)

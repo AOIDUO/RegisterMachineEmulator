@@ -49,6 +49,10 @@ class Emulator:
 				else: # subtract 1
 					self.regs[data_addr] -= 1
 					pc += 1
+
+			elif instr.opcode == Opcode.NOP:
+				pc += 1
+
 			else:
 				raise Exception("Unsupported opcode")
 

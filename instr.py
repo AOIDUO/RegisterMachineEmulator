@@ -7,6 +7,7 @@ from pytest import param
 class Opcode(Enum):
 	DECJZ = auto()
 	INC = auto()
+	NOP = auto()
 
 @dataclass
 class Param:
