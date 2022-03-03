@@ -20,9 +20,9 @@ class RegMachineMain:
         else:
             f = open(self.args.input_file, mode='r')
 
-        x,f = pre_process(f)
+        x,f,alias_macro_map = pre_process(f)
 
-        print(x)
+        print(alias_macro_map)
 
         lexer = Lexer(f)
         parser = Parser(lexer)
